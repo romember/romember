@@ -1,0 +1,33 @@
+# Trading Ruleset Agent — configuration
+# Copy to config.yaml and edit. Every field is optional; omitted keys use the
+# defaults in trading_agent/config.py. Pass with:  --config config.yaml
+
+# --- Instrument / asset-class rules ---
+penny_price_threshold: 5.0          # price below this counts as a penny stock
+allowed_quote_types: ["EQUITY"]     # no options, crypto, or funds
+
+# --- Technical guardrails (Phase 3) ---
+no_chasing_max_week_gain_pct: 20.0  # DO NOT ENTER if up >= this over the week
+support_within_pct_max: 10.0        # entry must be within 5-10% of support
+support_within_pct_ideal: 5.0
+
+# --- Catalyst window (Phase 2) ---
+catalyst_max_days: 92               # catalyst must land within ~3 months
+catalyst_ideal_min_days: 21
+catalyst_ideal_max_days: 92
+
+# --- Risk / position sizing (Phase 1: Loss Tolerance) ---
+max_gap_down_pct: 20.0              # assumed bad-earnings gap-down
+# Fill these in to auto-evaluate the Loss Tolerance rule:
+# trading_capital: 25000
+# position_size: 2000               # $ committed to this single trade
+# max_acceptable_loss: 600          # $ loss that would NOT hurt essentials
+
+# --- Graduation rule (Part 1) ---
+# graduation_target: 100000         # capital milestone
+graduation_transfer_pct: 70.0       # % of profits into VTI/VOO at the milestone
+
+# --- AI qualitative assessment ---
+ai_enabled: true                    # use Claude for macro-tailwind / baseline reads
+ai_model: claude-opus-5
+# Requires ANTHROPIC_API_KEY in the environment (or `ant auth login`).

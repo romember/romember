@@ -1,0 +1,58 @@
+{
+  "GOODCO": {
+    "name": "GoodCo Industries",
+    "quote_type": "EQUITY",
+    "currency": "USD",
+    "sector": "Technology",
+    "industry": "Semiconductors",
+    "description": "GoodCo designs and sells power-management chips used in data-center and electric-vehicle platforms. It has been profitable for six consecutive years and is expanding capacity ahead of an AI-infrastructure buildout.",
+    "market_cap": 42000000000,
+    "total_revenue": 6800000000,
+    "trailing_pe": 24.5,
+    "next_earnings_date": "2026-09-10",
+    "closes": [
+      95, 96, 94, 97, 98, 99, 100, 101, 100, 99,
+      98, 97, 96, 95, 96, 97, 98, 99, 100, 101,
+      102, 103, 102, 101, 100, 99, 98, 97, 96, 95,
+      96, 97, 98, 99, 100, 101, 102, 103, 104, 105,
+      104, 103, 102, 101, 100, 99, 100, 101, 102, 103,
+      102, 101, 100, 101, 102, 103, 104, 103, 102, 103
+    ]
+  },
+  "PARABOLIC": {
+    "name": "Parabolic Meme Corp",
+    "quote_type": "EQUITY",
+    "currency": "USD",
+    "sector": "Consumer Cyclical",
+    "industry": "Specialty Retail",
+    "description": "A heavily shorted retailer that went viral on social media this week.",
+    "market_cap": 3200000000,
+    "total_revenue": 900000000,
+    "next_earnings_date": "2026-08-25",
+    "closes": [
+      10, 10.2, 10.1, 10.3, 10.5, 10.4, 10.6, 10.8, 11.0, 11.2,
+      11.5, 12.0, 13.0, 15.0, 18.0, 22.0
+    ]
+  },
+  "CRYPTOX": {
+    "name": "SomeCoin",
+    "quote_type": "CRYPTOCURRENCY",
+    "currency": "USD",
+    "sector": null,
+    "industry": null,
+    "description": "A cryptocurrency token.",
+    "closes": [100, 110, 105, 120, 130]
+  },
+  "PENNYCO": {
+    "name": "Penny Story Inc",
+    "quote_type": "EQUITY",
+    "currency": "USD",
+    "sector": "Healthcare",
+    "industry": "Biotechnology",
+    "description": "Pre-revenue biotech with a single clinical candidate.",
+    "market_cap": 40000000,
+    "total_revenue": 0,
+    "next_earnings_date": "2026-08-20",
+    "closes": [3.0, 3.1, 2.9, 3.2, 3.0, 2.8, 2.9, 3.0, 3.1, 3.0]
+  }
+}
