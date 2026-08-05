@@ -19,6 +19,13 @@ no network). Pass tickers to screen live data:
 ./run.sh AAPL NVDA
 ```
 
+**On Windows**, use `run.bat` instead (same behavior):
+
+```bat
+run.bat
+run.bat AAPL NVDA
+```
+
 ## Manual setup (if you prefer)
 
 ```bash
