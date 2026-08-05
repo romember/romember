@@ -35,6 +35,10 @@ python -m trading_agent --no-ai --from-json examples/sample_stocks.json GOODCO P
 # Live data via Yahoo Finance (needs outbound network to the finance hosts):
 python -m trading_agent AAPL NVDA
 
+# Live data via Alpha Vantage (free API key, network-allowed alternative):
+export ALPHAVANTAGE_API_KEY=your_key
+python -m trading_agent --provider alphavantage AAPL
+
 # With account rules + the AI layer:
 export ANTHROPIC_API_KEY=sk-ant-...
 python -m trading_agent --config config.yaml AAPL
@@ -45,7 +49,10 @@ python -m trading_agent --config config.yaml AAPL
 The AI layer talks to the Anthropic API; the default data layer talks to Yahoo
 Finance. Some restricted/sandboxed networks block the finance hosts by policy —
 in that case use `--from-json` with a snapshot (see below), or point the data
-layer at a provider your network allows. The rule logic is identical either way.
+layer at a provider your network allows. Two live providers ship in the box —
+`yfinance` (default) and `alphavantage` (`--provider alphavantage`, free API
+key, standard-library HTTP so it respects `HTTPS_PROXY`). The rule logic is
+identical whichever source you use.
 
 ---
 
@@ -106,6 +113,8 @@ returning a populated `StockData` — nothing else changes.
 ```
 python -m trading_agent [TICKERS...] [options]
 
+  --provider NAME    Live data source: yfinance (default) | alphavantage
+  --av-key KEY       Alpha Vantage API key (else ALPHAVANTAGE_API_KEY env var)
   --from-json PATH   Read a JSON snapshot instead of live data (offline mode)
   --config PATH      YAML config with account rules / thresholds
   --no-ai            Disable the Claude qualitative layer

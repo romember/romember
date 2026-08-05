@@ -154,3 +154,42 @@ def test_e2e_goodco_reviewable(agent):
 def test_unknown_ticker_is_handled(agent):
     v = agent.screen("NOPE")
     assert v.data.warnings  # provider noted the miss
+
+
+# --------------------------------------------------------------------------
+# AlphaVantageProvider — parses a mocked payload with no network
+# --------------------------------------------------------------------------
+def test_alphavantage_parses_mocked_payload():
+    import json
+
+    from trading_agent.providers import AlphaVantageProvider
+
+    daily = {
+        f"2026-06-{d:02d}": {"4. close": str(100 + d), "3. low": str(98 + d)}
+        for d in range(1, 21)
+    }
+    responses = {
+        "OVERVIEW": json.dumps({
+            "Name": "Mock Corp", "AssetType": "Common Stock", "Currency": "USD",
+            "Sector": "TECHNOLOGY", "Industry": "SEMICONDUCTORS",
+            "MarketCapitalization": "42000000000", "RevenueTTM": "6800000000",
+            "PERatio": "24.5", "Description": "Chips.",
+        }),
+        "GLOBAL_QUOTE": json.dumps({"Global Quote": {"05. price": "120.0"}}),
+        "TIME_SERIES_DAILY": json.dumps({"Time Series (Daily)": daily}),
+        "EARNINGS_CALENDAR": "symbol,name,reportDate,fiscalDateEnding\nMOCK,Mock Corp,2026-07-15,2026-06-30\n",
+    }
+
+    def fake_fetch(params):
+        return responses[params["function"]]
+
+    provider = AlphaVantageProvider(api_key="test", _fetch=fake_fetch)
+    data = provider.fetch("MOCK")
+
+    assert data.quote_type == "EQUITY"          # "Common Stock" -> EQUITY
+    assert data.name == "Mock Corp"
+    assert data.total_revenue == 6800000000
+    assert data.price == 120.0                  # last close in the series
+    assert data.support_level == 99.0           # min low over the window
+    assert data.next_earnings_date == date(2026, 7, 15)
+    assert data.week_return_pct is not None

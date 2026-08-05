@@ -27,7 +27,7 @@ import sys
 from .agent import TradingAgent, render_report
 from .config import Config
 from .models import Status
-from .providers import JSONProvider, YFinanceProvider
+from .providers import AlphaVantageProvider, JSONProvider, YFinanceProvider
 
 
 def _verdict_to_dict(v) -> dict:
@@ -66,6 +66,17 @@ def build_parser() -> argparse.ArgumentParser:
         help="Read a JSON snapshot instead of live data (offline mode).",
     )
     p.add_argument(
+        "--provider",
+        choices=["yfinance", "alphavantage"],
+        default="yfinance",
+        help="Live data source (ignored when --from-json is used).",
+    )
+    p.add_argument(
+        "--av-key",
+        metavar="KEY",
+        help="Alpha Vantage API key (else uses ALPHAVANTAGE_API_KEY env var).",
+    )
+    p.add_argument(
         "--no-ai", action="store_true", help="Disable the Claude qualitative layer."
     )
     p.add_argument("--json", action="store_true", help="Emit JSON instead of a report.")
@@ -84,6 +95,8 @@ def main(argv=None) -> int:
 
     if args.from_json:
         provider = JSONProvider.from_file(args.from_json)
+    elif args.provider == "alphavantage":
+        provider = AlphaVantageProvider(api_key=args.av_key)
     else:
         provider = YFinanceProvider(period=args.period)
 

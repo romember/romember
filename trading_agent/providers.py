@@ -241,6 +241,146 @@ class YFinanceProvider(DataProvider):
             return None
 
 
+class AlphaVantageProvider(DataProvider):
+    """Live data via Alpha Vantage (https://www.alphavantage.co).
+
+    Needs a free API key (``ALPHAVANTAGE_API_KEY`` env var, or passed in). Uses
+    only the standard library for HTTP, so it respects ``HTTPS_PROXY`` and adds
+    no dependency. Point the agent here with ``--provider alphavantage`` when
+    your network allows Alpha Vantage but not Yahoo Finance.
+
+    The network call is isolated in ``_fetch`` so it can be stubbed in tests.
+    """
+
+    BASE = "https://www.alphavantage.co/query"
+
+    def __init__(self, api_key: Optional[str] = None, _fetch=None):
+        import os
+
+        self.api_key = api_key or os.environ.get("ALPHAVANTAGE_API_KEY", "demo")
+        self._fetch = _fetch or self._http_get
+
+    def _http_get(self, params: dict) -> str:
+        import urllib.parse
+        import urllib.request
+
+        query = urllib.parse.urlencode({**params, "apikey": self.api_key})
+        url = f"{self.BASE}?{query}"
+        with urllib.request.urlopen(url, timeout=30) as resp:  # noqa: S310
+            return resp.read().decode("utf-8")
+
+    def _get_json(self, params: dict) -> dict:
+        import json
+
+        try:
+            return json.loads(self._fetch(params))
+        except Exception:  # noqa: BLE001
+            return {}
+
+    def fetch(self, ticker: str) -> StockData:
+        warnings: list[str] = []
+
+        overview = self._get_json({"function": "OVERVIEW", "symbol": ticker})
+        quote = self._get_json({"function": "GLOBAL_QUOTE", "symbol": ticker})
+        series = self._get_json(
+            {"function": "TIME_SERIES_DAILY", "symbol": ticker, "outputsize": "compact"}
+        )
+
+        # Alpha Vantage signals throttling / bad symbols via Note / Information.
+        for blob in (overview, quote, series):
+            for key in ("Note", "Information", "Error Message"):
+                if isinstance(blob, dict) and blob.get(key):
+                    warnings.append(str(blob[key]))
+
+        closes, lows = self._parse_series(series)
+        tech = compute_technicals(closes, lows) if closes else {}
+        if not closes:
+            warnings.append(
+                "No price history returned (rate limit, bad symbol, or host "
+                "unreachable). Technical checks will be UNKNOWN."
+            )
+
+        gq = quote.get("Global Quote", {}) if isinstance(quote, dict) else {}
+        price = tech.get("price") or _to_float(gq.get("05. price"))
+
+        asset_type = (overview.get("AssetType") or "") if isinstance(overview, dict) else ""
+        quote_type = "EQUITY" if asset_type.lower() == "common stock" else (
+            asset_type.upper() or None
+        )
+
+        earnings = self._earnings_date(ticker, warnings)
+
+        return StockData(
+            ticker=ticker.upper(),
+            name=overview.get("Name") if isinstance(overview, dict) else None,
+            quote_type=quote_type,
+            price=price,
+            currency=overview.get("Currency", "USD") if isinstance(overview, dict) else "USD",
+            sector=(overview.get("Sector") or None) if isinstance(overview, dict) else None,
+            industry=(overview.get("Industry") or None) if isinstance(overview, dict) else None,
+            description=overview.get("Description") if isinstance(overview, dict) else None,
+            market_cap=_to_float(overview.get("MarketCapitalization")) if isinstance(overview, dict) else None,
+            total_revenue=_to_float(overview.get("RevenueTTM")) if isinstance(overview, dict) else None,
+            trailing_pe=_to_float(overview.get("PERatio")) if isinstance(overview, dict) else None,
+            week_return_pct=tech.get("week_return_pct"),
+            support_level=tech.get("support_level"),
+            pct_above_support=tech.get("pct_above_support"),
+            ma50=tech.get("ma50"),
+            next_earnings_date=earnings,
+            days_to_earnings=_days_until(earnings),
+            source="alphavantage",
+            warnings=warnings,
+        )
+
+    @staticmethod
+    def _parse_series(series: dict) -> tuple[list[float], list[float]]:
+        ts = series.get("Time Series (Daily)") if isinstance(series, dict) else None
+        if not ts:
+            return [], []
+        # Keys are dates; sort ascending so the series is oldest -> newest.
+        closes: list[float] = []
+        lows: list[float] = []
+        for day in sorted(ts.keys()):
+            row = ts[day]
+            c = _to_float(row.get("4. close"))
+            low = _to_float(row.get("3. low"))
+            if c is not None:
+                closes.append(c)
+                lows.append(low if low is not None else c)
+        return closes, lows
+
+    def _earnings_date(self, ticker: str, warnings: list[str]) -> Optional[date]:
+        # EARNINGS_CALENDAR returns CSV, not JSON.
+        try:
+            text = self._fetch(
+                {"function": "EARNINGS_CALENDAR", "symbol": ticker, "horizon": "3month"}
+            )
+        except Exception as exc:  # noqa: BLE001
+            warnings.append(f"Could not load earnings calendar: {exc}")
+            return None
+        lines = [ln for ln in text.splitlines() if ln.strip()]
+        if len(lines) < 2:
+            return None
+        header = [h.strip().lower() for h in lines[0].split(",")]
+        try:
+            idx = header.index("reportdate")
+        except ValueError:
+            return None
+        cols = lines[1].split(",")
+        if idx < len(cols):
+            return _parse_date(cols[idx].strip())
+        return None
+
+
+def _to_float(value) -> Optional[float]:
+    if value in (None, "", "None", "-"):
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
 def _parse_date(value) -> Optional[date]:
     if value is None:
         return None
