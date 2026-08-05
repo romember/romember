@@ -1,0 +1,9 @@
+# Core data provider (used in your environment; blocked by policy in some sandboxes)
+yfinance>=0.2.40
+pandas>=2.0
+
+# AI qualitative assessment (Anthropic API host is reachable)
+anthropic>=0.40
+
+# Config
+PyYAML>=6.0
